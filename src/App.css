@@ -1,0 +1,204 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  position: absolute;
+}
+
+/* 总容器 */
+.container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+}
+
+/* 左侧播放器 */
+.player {
+  display: flex;
+  flex-direction: column;  /*主轴方向，column为竖直，默认水平*/
+  align-items: center;  /* 交叉轴对齐 */ /* 可选值：flex-start(左)/flex-end(右)/stretch(拉伸) */
+  box-sizing: border-box;
+  width: 70%;
+  height: 100%;
+  text-align: center;
+  border-right: 2px solid #000;
+  background-color: #333;
+}
+
+/* 音符图标（占位） */
+.music-icon {
+  position: relative;
+  left: -6%;
+  width: 50%;
+  height: 70%;
+}
+
+/* 进度条 */
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #333;
+  position: relative;
+  margin: 20px 0;
+}
+
+input {
+  cursor: pointer;
+}
+
+/* 断点标记 */
+.breakpoint-mark {
+  position: absolute;
+  width: 3px;
+  height: 10px;
+  background: red;
+}
+
+/* 按钮区 */
+.buttonbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 10vh;
+}
+
+.button {
+  width: 5vw;
+  height: 5vw;
+  padding: 0vw;
+  border: none;
+
+  background-color: #ccc;
+}
+
+.button.play {
+  margin-right: 1vw;
+  margin-left: 1vw;
+  border-radius: 50%;
+  font-size: 1vw;
+  cursor: pointer;
+}
+
+.button.move {
+  width: 2.5vw;
+  height: 2.5vw;
+  border-radius: 50%;
+  font-size: 0.7vw;
+  cursor: pointer;
+}
+
+.button.move.left {
+  margin-left: 5vw;
+}
+
+.button.move.right {
+  margin-right: 5vw;
+}
+
+.button.speed {
+  height: 1.3vw;
+  margin-right: 1vw;
+  font-size: 0.9vw;
+}
+
+.button.mode {
+  height: 1.3vw;
+  margin-right: 1vw;
+  font-size: 0.9vw;
+}
+
+.button.breakpoint {
+  height: 1.3vw;
+  font-size: 0.9vw;
+
+  cursor: pointer;
+}
+
+/* 选择文件按钮 */
+.button.file {
+  width: 3vw;
+  height: 3vw;
+  border-radius: 30%;
+  margin-right: 13vw;
+
+  font-size: 0.65vw;
+
+  cursor: pointer;
+}
+
+/* 右侧列表 */
+.list-container {
+  box-sizing: border-box;
+  width: 30%;
+  height: 100%;
+  padding: 2vh;
+  background-color: #4a4949;
+}
+
+/* 列表button */
+.choose-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 50%;
+  height: 6vh;
+  border: 0.15vw, solid, #000;
+  margin-bottom: 4vh;
+
+  font-size: 1.2vw;
+
+  cursor: pointer;
+}
+
+.choose-list.left {
+  border-right: none;
+}
+
+/* 列表项区 */
+.itembar {
+  height: 86vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.itembar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 列表项 */
+.list-item {
+  box-sizing: border-box;
+  height: 2vw;
+  margin-bottom: 1vw;
+
+  font-size: 1vw;
+  color: #9a9a9a;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.delete {
+  margin-right: 1vw;
+
+  font-size: 1.5vw;
+
+  cursor: pointer;
+}
+
+.delete:hover {
+  color: #f45454;
+}
+
+.word {
+  cursor: pointer;
+}
+
+.word:hover {
+  color: #fff;
+}
