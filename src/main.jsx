@@ -4,7 +4,5 @@ import './index.css'
 import MusicPlayer from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
     <MusicPlayer />
-  </StrictMode>,
 )

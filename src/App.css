@@ -35,6 +35,10 @@ html, body {
   height: 70%;
 }
 
+.playingname {
+  color: #ccc
+}
+
 /* 进度条 */
 .progress-bar {
   width: 100%;
