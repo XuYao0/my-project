@@ -28,7 +28,7 @@ function ProgressBar({playingIndex, progress, setProgress, audioRef, setIsPlayin
     )
 }
 
-function FileButton({playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, audioRef, setIsPlaying}) {
+function FileButton({playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, cycle, setCycle, audioRef, setIsPlaying}) {
     const fileInputRef = useRef(null);
 
     // 处理文件上传后的行为
@@ -58,13 +58,13 @@ function FileButton({playingIndex, setPlayingIndex, Url, setUrl, fileName, setFi
                 onChange={handleFileChange} 
                 style = {{display: "none"}} 
             />
-            <button onClick={handleButtonClick} className = "button file">选择文件</button>
+            <button onClick={handleButtonClick} className = "button file" disabled = {cycle.length !== 0}>选择文件</button>
         </div>
     )
 }
 
-function ModeButton({playingIndex, breakpoint, progress, setProgress, audioRef, setIsPlaying}) {
-    const [isLooping, setIsLooping] = useState(false); // 控制是否进入断点循环模式
+function ModeButton({playingIndex, breakpoint, progress, setProgress, cycle, setCycle, audioRef, setIsPlaying}) {
+    const [isLooping, setIsLooping] = useState(false); // 控制是否循环
     const [start, setStart] = useState(0); // 断点循环的起始时间
     const [end, setEnd] = useState(0); // 断点循环的结束时间
 
@@ -73,28 +73,40 @@ function ModeButton({playingIndex, breakpoint, progress, setProgress, audioRef, 
         if (value === "false") {
             // 退出循环模式
             setIsLooping(false);
-            setIsPlaying(true); // 恢复播放
+            setCycle([0, 0, 0])
+            setIsPlaying(true); // 恢复播放todo
         } else {
             // 进入循环模式
-            setStart(parseInt(prompt("请输入断点循环的起始断点序号")));
-            setEnd(parseInt(prompt("请输入断点循环的结束断点序号")));
-            setIsLooping(true);
+            setIsLooping(true)
+            setCycle([0])
         }
     };
 
     // 监听音频的播放进度，确保在断点循环模式下控制播放
     useEffect(() => {
-        if (isLooping) {
-            if (audioRef.current.currentTime >= breakpoint[playingIndex][end - 1]) {
-                audioRef.current.currentTime = breakpoint[playingIndex][start - 1];
+        if (isLooping && start != 0 && end != 0) {
+            if (audioRef.current.currentTime >= end) {
+                audioRef.current.currentTime = start;
                 setProgress((audioRef.current.currentTime / audioRef.current.duration) * 10000);
             }
-            if (audioRef.current.currentTime <= breakpoint[playingIndex][start - 1]) {
-                audioRef.current.currentTime = breakpoint[playingIndex][start - 1];
+            if (audioRef.current.currentTime < start) {
+                audioRef.current.currentTime = start;
                 setProgress((audioRef.current.currentTime / audioRef.current.duration) * 10000);
             }
         }
     }, [[progress]]);
+
+    useEffect(() => {
+        if (cycle.length === 3) {
+            const newStart = cycle[1] < cycle[2]? cycle[1]: cycle[2]
+            const newEnd = cycle[1] >= cycle[2]? cycle[1]: cycle[2]
+            setStart(newStart)
+            setEnd(newEnd)
+            setCycle([])
+        } // 当选定两个断点后，设置循环起点和终点，同时清空cycle状态
+    }, [cycle])
+
+    useEffect(() => setIsLooping(false), [playingIndex])
 
     return (
         <select value = {isLooping} onChange = {(e) => changeMode(e.target.value)} disabled = {playingIndex === null} className = "button mode">
@@ -342,11 +354,12 @@ function PlayList({fileName, ...rest}) {
     )
 }
 
-function BreakpointListItem({playingIndex, breakpoint, setBreakpoint, breakpointText, setBreakpointText, setProgress, audioRef, time, index}) {
+function BreakpointListItem({playingIndex, breakpoint, setBreakpoint, breakpointText, setBreakpointText, setProgress, cycle, setCycle, audioRef, time, index}) {
     const clickTimeout = useRef(null); // 使用 ref 来保持定时器
     const inputRef = useRef(null) // 用以控制input聚焦
     const [isEditing, setIsEditing] = useState(false)
     const [inputValue, setInputValue] = useState('') // 在编辑模式下读取用户输入的数据
+    const [clicked, setClicked] = useState(false) // 控制是否处于断点模式下被点击
 
     const handleDelete = (index) => {
         // 如果断点集合的下标与playingIndex一样，那就留下该元素数组中下标与index不一样的
@@ -407,44 +420,88 @@ function BreakpointListItem({playingIndex, breakpoint, setBreakpoint, breakpoint
         }
     }
 
+    useEffect(() => {
+        if (cycle.length === 3) {
+            setClicked(false)
+        }
+    }, [cycle])  // 清空状态，免得第二次设置循环模式时，该项还是处于被选中的状态
+
     return (
-        <div className = "list-item">
-            <div onClick = {() => handleDelete(index)} className = "delete">x</div>
-            {isEditing? <input 
-                ref = {inputRef}
-                type = "text"
-                value = {inputValue}
-                onChange = {(e) => setInputValue(e.target.value)} 
-                onKeyDown = {(e) => handleKeyDown(e, index)} // 如果不传index，是不需要传e的，默认传过去，在handleKeyDown的箭头函数里直接接收就好了
-                onBlur = {() => handleSubmit(index)}
-            />
-            :<div onClick = {() => handleClick(time)} onDoubleClick = {handleDblClick} className = "word">{breakpointText[playingIndex][index]}</div>}
-        </div>
+        <>
+        {cycle.length !== 0? 
+            <div className = {`btn ${clicked ? "list-item-cycle click" : "list-item-cycle"}`} onClick = {() => {
+                setCycle([...cycle, time])
+                setClicked(true)
+            }}>
+                <div className = "delete">x</div>
+                <div className = "word">{breakpointText[playingIndex][index]}</div>
+            </div> :
+            <div className = "list-item">
+                <div onClick = {() => handleDelete(index)} className = "delete">x</div>
+                {isEditing? <input 
+                    ref = {inputRef}
+                    type = "text"
+                    value = {inputValue}
+                    onChange = {(e) => setInputValue(e.target.value)} 
+                    onKeyDown = {(e) => handleKeyDown(e, index)} // 如果不传index，是不需要传e的，默认传过去，在handleKeyDown的箭头函数里直接接收就好了
+                    onBlur = {() => handleSubmit(index)}
+                />
+                :<div onClick = {() => handleClick(time)} onDoubleClick = {handleDblClick} className = "word">{breakpointText[playingIndex][index]}</div>}
+            </div>
+            }
+        </>
     )
 }
 
-function BreakPointList({playingIndex, breakpoint, ...rest}) {
+function BreakPointList({playingIndex, breakpoint, cycle, setCycle, audioRef, ...rest}) {
+    const [click1, setClick1] = useState(false) // 控制开头和结尾两个断点被点击后的背景色
+    const [click2, setClick2] = useState(false)
+
+    useEffect(() => {
+        if (cycle.length === 3) {
+            setClick1(false)
+            setClick2(false)
+        }
+    }, [cycle])  // 清空状态，免得第二次设置循环模式时，这俩还是处于被选中的状态
 
     return (
         <div className = "itembar">
+            {cycle.length !== 0? <div className = {`btn ${click1 ? "list-item-cycle click" : "list-item-cycle"}`} onClick = {() => {
+                    setCycle([...cycle, 0])
+                    setClick1(true)}}>开头</div> : <></>}
             {playingIndex === null? <></> : breakpoint[playingIndex].map((time, index) => {
                 // 上面这一行，假如playingIndex不存在，那么就返回空标签。如果playingIndex存在，但尚未设置断点，那访问断点数组会返回undefined，所以还是要加上“或空数组”
                 return (
-                    <BreakpointListItem key = {index} {...{...rest, playingIndex, breakpoint, time, index}}></BreakpointListItem>
+                    <BreakpointListItem key = {index} {...{...rest, playingIndex, breakpoint, cycle, setCycle, audioRef, time, index}}></BreakpointListItem>
                 )
             })}
+            {cycle.length !== 0? <div className = {`btn ${click2 ? "list-item-cycle click" : "list-item-cycle"}`} onClick = {() => {
+                    setCycle([...cycle, audioRef.current.duration])
+                    setClick2(true)}}>结尾</div> : <></>}
         </div>
     )
 }
 
 function List(props) {
     const [list, setList] = useState(1);
+
+    // 当cycle为1时，说明循环模式被点击，此时自动跳转到断点列表
+    useEffect(() => {
+        if (props.cycle.length === 1) setList(0)
+    }, [props.cycle])
+
     return (
         <div className = "list-container">
-            <div style = {{display: "flex"}}>
-                <div className = "choose-list left" onClick = {() => setList(1)}>播放列表</div>
-                <div className = "choose-list" onClick = {() => setList(0)}>断点列表</div>
-            </div>
+            {props.cycle.length !== 0?             
+                <div style = {{display: "flex"}}>
+                    <div className = "choose-list left">播放列表</div>
+                    <div className = "choose-list">断点列表</div>
+                </div> :
+                <div style = {{display: "flex"}}>
+                    <div className = "choose-list left" onClick = {() => setList(1)}>播放列表</div>
+                    <div className = "choose-list" onClick = {() => setList(0)}>断点列表</div>
+                </div>
+            }
             {list? <PlayList {...props}></PlayList> : <BreakPointList {...props}></BreakPointList>}
         </div>
     )
@@ -457,12 +514,13 @@ export default function MusicPlayer() {
     const [breakpoint, setBreakpoint] = useState([]);  // 存储所有文件的断点
     const [breakpointText, setBreakpointText] = useState([]) // 存储所有文件的断点名
     const [progress, setProgress] = useState(0);  // 存储当前播放的进度
+    const [cycle, setCycle] = useState([]) // 存储断点模式的断点
     const audioRef = useRef(null); // 播放器引用
 
     return (
         <div className = "container">
-            <Player {...{playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, audioRef}}></Player>
-            <List {...{playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, audioRef}}></List>
+            <Player {...{playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, cycle, setCycle, audioRef}}></Player>
+            <List {...{playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, cycle, setCycle, audioRef}}></List>
         </div>
     )
 }

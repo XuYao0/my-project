@@ -187,6 +187,29 @@ input {
   align-items: center;
 }
 
+.list-item-cycle {
+  box-sizing: border-box;
+  height: 2vw;
+  margin-bottom: 1vw;
+
+  font-size: 1vw;
+  color: #9a9a9a;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  cursor: pointer;
+}
+
+.list-item-cycle:hover {
+  background-color: rgb(104, 127, 81);
+}
+
+.list-item-cycle.click {
+  background-color: rgb(104, 127, 81);
+}
+
 .delete {
   margin-right: 1vw;
 
