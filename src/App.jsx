@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext } from "react";
+import { KeyProvider, keyContext } from "./KeyContext";
 import "./App.css"; // 引入 CSS 文件
 
 
@@ -28,7 +29,7 @@ function ProgressBar({playingIndex, progress, setProgress, audioRef, setIsPlayin
     )
 }
 
-function FileButton({playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, cycle, setCycle, audioRef, setIsPlaying}) {
+function FileButton({setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, cycle}) {
     const fileInputRef = useRef(null);
 
     // 处理文件上传后的行为
@@ -63,7 +64,7 @@ function FileButton({playingIndex, setPlayingIndex, Url, setUrl, fileName, setFi
     )
 }
 
-function ModeButton({playingIndex, breakpoint, progress, setProgress, cycle, setCycle, audioRef, setIsPlaying}) {
+function ModeButton({playingIndex, progress, setProgress, cycle, setCycle, audioRef, setIsPlaying}) {
     const [isLooping, setIsLooping] = useState(false); // 控制是否循环
     const [start, setStart] = useState(0); // 断点循环的起始时间
     const [end, setEnd] = useState(0); // 断点循环的结束时间
@@ -74,7 +75,6 @@ function ModeButton({playingIndex, breakpoint, progress, setProgress, cycle, set
             // 退出循环模式
             setIsLooping(false);
             setCycle([0, 0, 0])
-            setIsPlaying(true); // 恢复播放todo
         } else {
             // 进入循环模式
             setIsLooping(true)
@@ -84,17 +84,18 @@ function ModeButton({playingIndex, breakpoint, progress, setProgress, cycle, set
 
     // 监听音频的播放进度，确保在断点循环模式下控制播放
     useEffect(() => {
-        if (isLooping && start != 0 && end != 0) {
+        if (isLooping && (start !== 0 || end !== 0)) {
             if (audioRef.current.currentTime >= end) {
                 audioRef.current.currentTime = start;
                 setProgress((audioRef.current.currentTime / audioRef.current.duration) * 10000);
+                setIsPlaying(true)
             }
             if (audioRef.current.currentTime < start) {
                 audioRef.current.currentTime = start;
                 setProgress((audioRef.current.currentTime / audioRef.current.duration) * 10000);
             }
         }
-    }, [[progress]]);
+    }, [progress, isLooping, start, end]);
 
     useEffect(() => {
         if (cycle.length === 3) {
@@ -128,8 +129,21 @@ function SpeedButton({playingIndex, audioRef}) {
         setSpeed(1)
     }, [playingIndex])
 
+    // 监控键盘S
+    const {listeners} = useContext(keyContext)
+    const selectRef = useRef(null)
+    useEffect(() => {
+        const effectHanlder = (key) => {
+            if (key === "S") {
+                selectRef.current.focus()   // 使select获得焦点，从而可以通过上下键改变速度
+            }
+        }
+        listeners.current.add(effectHanlder)
+        return () => listeners.current.delete(effectHanlder)
+    }, [])
+
     return (
-        <select value = {speed} onChange = {handleChange} disabled = {playingIndex === null} className = "button speed">
+        <select ref = {selectRef} value = {speed} onChange = {handleChange} disabled = {playingIndex === null} className = "button speed">
             <option value = "1">1x</option>
             <option value = "0.5">0.5x</option>
             <option value = "0.6">0.6x</option>
@@ -150,25 +164,17 @@ function SpeedButton({playingIndex, audioRef}) {
     )
 }
 
-function PlayButton({playingIndex, audioRef, isPlaying, setIsPlaying}) {
-    // 播放与暂停
-    const togglePlay = () => {
-        if (isPlaying) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play();
-        }
-        setIsPlaying(!isPlaying);
-    }
-
+function PlayButton({playingIndex, isPlaying, setIsPlaying}) {
     return (
-        <button className = "button play" onClick = {togglePlay} disabled = {playingIndex === null}>
+        <button className = "button play" onClick = {() => setIsPlaying(!isPlaying)} disabled = {playingIndex === null}>
             {isPlaying? "⏸" : "▶"}
         </button>
     )
 }
 
 function FastForwardButton({playingIndex, setProgress, audioRef}) {
+    const {listeners} = useContext(keyContext)
+
     const handleFastForward = () => {
         const time = audioRef.current.currentTime;
         if(time + 5 > audioRef.current.duration) {
@@ -180,12 +186,23 @@ function FastForwardButton({playingIndex, setProgress, audioRef}) {
         setProgress((audioRef.current.currentTime / audioRef.current.duration) * 10000);
     }
 
+    // 监听方向键右
+    useEffect(() => {
+        const effectHanlder = (key) => {
+            if (key === "ArrowRight") handleFastForward()
+        }
+        listeners.current.add(effectHanlder)
+        return () => listeners.current.delete(effectHanlder)
+    }, [])
+
     return (
         <button onClick = {() => handleFastForward()} disabled = {playingIndex === null} className = "button move right">FF</button>
     )
 }
 
 function RewindButton({playingIndex, setProgress, audioRef}) {
+    const {listeners} = useContext(keyContext)
+
     const handleRewind = () => {
         const time = audioRef.current.currentTime;
         if(time - 5 < 0) {
@@ -196,12 +213,25 @@ function RewindButton({playingIndex, setProgress, audioRef}) {
         }
         setProgress((audioRef.current.currentTime / audioRef.current.duration) * 10000);
     }
+
+    // 监听方向键左
+    useEffect(() => {
+        const effectHanlder = (key) => {
+            if (key === "ArrowLeft") handleRewind()
+        }
+        listeners.current.add(effectHanlder)
+        return () => listeners.current.delete(effectHanlder)
+    }, [])  // 这里不需要依赖，因为内部函数使用的 audioRef 和 setProgress 是固定的。即便audio的src发生变化，但也仅仅是audio的一个属性变化，并不是audio发生了变化
+    // 要使audio发生变化，必须要react重新挂载audio这个标签，这样的话，整个player组件都会重新挂载，这个useEffect也会重新挂载，所以不需要依赖
+
     return (
         <button onClick = {() => handleRewind()} disabled = {playingIndex === null} className = "button move left">REW</button>
     )
 }
 
 function BreakPointButton({playingIndex, breakpoint, setBreakpoint, breakpointText, setBreakpointText, audioRef}) {
+    const {listeners} = useContext(keyContext)
+
     const handleBreakPoint = () => {
         const time = audioRef.current.currentTime
         const len = breakpoint[playingIndex].length + 1
@@ -212,27 +242,38 @@ function BreakPointButton({playingIndex, breakpoint, setBreakpoint, breakpointTe
         const newBreakpointText = breakpointText.map((item, index) => playingIndex === index? temp_b: item) // 临时断点名集合
         setBreakpointText(newBreakpointText)
     }
+
+    // 监听键盘B
+    useEffect(() => {
+        const effectHanlder = (key) => {
+            if (key === "B") handleBreakPoint()
+        }
+        listeners.current.add(effectHanlder)
+        return () => listeners.current.delete(effectHanlder)
+    }, [breakpoint]) // 同player里的闭包，必须依赖breakpoint，否则里面的breakpoint永远是同一个值
+
     return (
         <button onClick = {() => handleBreakPoint()} disabled = {playingIndex === null} className = "button breakpoint">添加断点</button>
     )
 }
 
-function ButtonBar(props) {
+function ButtonBar({playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, cycle, setCycle, audioRef, isPlaying, setIsPlaying}) {
     return (
         <div className = "buttonbar">
-            <FileButton {...props}></FileButton>
-            <RewindButton {...props}></RewindButton>
-            <PlayButton {...props}></PlayButton>
-            <FastForwardButton {...props}></FastForwardButton>
-            <SpeedButton {...props}></SpeedButton>
-            <ModeButton {...props}></ModeButton>
-            <BreakPointButton {...props}></BreakPointButton>
+            <FileButton {...{setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, cycle}}></FileButton>
+            <RewindButton {...{playingIndex, setProgress, audioRef}}></RewindButton>
+            <PlayButton {...{playingIndex, isPlaying, setIsPlaying}}></PlayButton>
+            <FastForwardButton {...{playingIndex, setProgress, audioRef}}></FastForwardButton>
+            <SpeedButton {...{playingIndex, audioRef}}></SpeedButton>
+            <ModeButton {...{playingIndex, progress, setProgress, cycle, setCycle, audioRef, setIsPlaying}}></ModeButton>
+            <BreakPointButton {...{playingIndex, breakpoint, setBreakpoint, breakpointText, setBreakpointText, audioRef}}></BreakPointButton>
         </div>
     )
 }
 
 function Player({playingIndex, Url, fileName, setProgress, audioRef, ...rest}) {
     const [isPlaying, setIsPlaying] = useState(false);
+    const {listeners} = useContext(keyContext)
     
     // 监听播放进度
     const handleTimeUpdate = () => {
@@ -247,16 +288,38 @@ function Player({playingIndex, Url, fileName, setProgress, audioRef, ...rest}) {
     useEffect(() => {
         console.log(playingIndex)
         if (playingIndex !== null && audioRef.current) {
-            audioRef.current.load(); // 重新加载音频
-            audioRef.current
-            .play()
-            .then(() => setIsPlaying(true)) // 如果成功播放，更新状态
-            .catch((err) => console.log("自动播放被阻止:", err)); // 捕获自动播放失败的情况
+            audioRef.current.load()
+            if (isPlaying) {  // 避免在播放状态下切换音频时不播放
+                audioRef.current.play()
+            }
+            else {
+                setIsPlaying(true)
+            }
         }
         if(playingIndex === null) {
             audioRef.current.load();
+            setIsPlaying(false)
         }
     }, [playingIndex]);
+
+    // 播放状态变化时控制音频播放
+    useEffect(() => {
+        if (isPlaying) {
+            audioRef.current.play();
+        } 
+        else {
+            audioRef.current.pause();
+        }
+    }, [isPlaying])
+
+    // 控制播放
+    useEffect(() => {
+        const effectHanlder = (key) => {
+            if (key === "Space") setIsPlaying(!isPlaying)
+        }
+        listeners.current.add(effectHanlder)
+        return () => listeners.current.delete(effectHanlder)
+    }, [isPlaying])  // 依赖isPlaying，这样的话在其变化的时候，才会重新挂载effectHanlder，否则里面的isPlaying永远是同一个值（闭包）。
 
     return (
         <div className = "player">
@@ -269,7 +332,7 @@ function Player({playingIndex, Url, fileName, setProgress, audioRef, ...rest}) {
     )
 }
 
-function PlayListItem({playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, audioRef, index}) {
+function PlayListItem({playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, index}) {
     const [isEditing, setIsEditing] = useState(false)
     const [inputValue, setInputValue] = useState('') // 在编辑模式下读取用户输入的值
     const inputRef = useRef(null) // 用以控制input聚焦
@@ -285,8 +348,10 @@ function PlayListItem({playingIndex, setPlayingIndex, Url, setUrl, fileName, set
         setBreakpoint(newBreakpoint)
         setBreakpointText(newBreakpointText)
         if(playingIndex === index) { // 如果要删的就是当前正在播放的，那就把当前播放的置为null
-            console.log("delete");
             setPlayingIndex(null);
+        }
+        else if (playingIndex > index) { // 如果要删的在当前播放的前面，那就把当前播放的下标减一
+            setPlayingIndex(playingIndex - 1);
         }
     }
 
@@ -401,7 +466,7 @@ function BreakpointListItem({playingIndex, breakpoint, setBreakpoint, breakpoint
         if (inputValue.trim() === '') {
             setIsEditing(false)
             return
-        };  // 防止空提交
+        };  // 空则不修改
         const newBreakpointText = breakpointText.map((item, i) => { // 替换指定下标的断点名
             if (playingIndex === i) return item.map((text, j) => {
                 if (index === j) return "断点" + (index+1) + " : " + inputValue
@@ -518,9 +583,11 @@ export default function MusicPlayer() {
     const audioRef = useRef(null); // 播放器引用
 
     return (
-        <div className = "container">
-            <Player {...{playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, cycle, setCycle, audioRef}}></Player>
-            <List {...{playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, cycle, setCycle, audioRef}}></List>
-        </div>
+        <KeyProvider>
+            <div className = "container">
+                <Player {...{playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, cycle, setCycle, audioRef}}></Player>
+                <List {...{playingIndex, setPlayingIndex, Url, setUrl, fileName, setFileName, breakpoint, setBreakpoint, breakpointText, setBreakpointText, progress, setProgress, cycle, setCycle, audioRef}}></List>
+            </div>
+        </KeyProvider>
     )
 }
