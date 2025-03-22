@@ -573,14 +573,34 @@ function List(props) {
 }
 
 export default function MusicPlayer() {
+    const getStoredState = (key, defaultValue) => {
+        const stored = localStorage.getItem(key);
+        return stored? JSON.parse(stored): defaultValue;
+    }
     const [playingIndex, setPlayingIndex] = useState(null);  // 存储当前播放的下标
-    const [Url, setUrl] = useState([]);  // 存储所有文件的URL
-    const [fileName, setFileName] = useState([]);  // 存储所有文件的名字
-    const [breakpoint, setBreakpoint] = useState([]);  // 存储所有文件的断点
-    const [breakpointText, setBreakpointText] = useState([]) // 存储所有文件的断点名
+    const [Url, setUrl] = useState(getStoredState("Url", []));  // 存储所有文件的URL
+    const [fileName, setFileName] = useState(getStoredState("fileName", []));  // 存储所有文件的名字
+    const [breakpoint, setBreakpoint] = useState(getStoredState("breakpoint", []));  // 存储所有文件的断点
+    const [breakpointText, setBreakpointText] = useState(getStoredState("breakpointText", [])) // 存储所有文件的断点名
     const [progress, setProgress] = useState(0);  // 存储当前播放的进度
     const [cycle, setCycle] = useState([]) // 存储断点模式的断点
     const audioRef = useRef(null); // 播放器引用
+
+    useEffect(() => {
+        localStorage.setItem("Url", JSON.stringify(Url));
+    }, [Url]);
+
+    useEffect(() => {
+        localStorage.setItem("fileName", JSON.stringify(fileName));
+    }, [fileName]);
+
+    useEffect(() => {
+        localStorage.setItem("breakpoint", JSON.stringify(breakpoint));
+    }, [breakpoint]);
+
+    useEffect(() => {
+        localStorage.setItem("breakpointText", JSON.stringify(breakpointText));
+    }, [breakpointText]);
 
     return (
         <KeyProvider>
