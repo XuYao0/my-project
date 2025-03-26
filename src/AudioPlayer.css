@@ -27,6 +27,34 @@ html, body {
   background-color: #333;
 }
 
+/* 帮助模块 */
+.help-container {
+  position: absolute;
+  top: 1vw;
+  left: 1vw;
+  z-index: 1000;
+}
+.help-button {
+  cursor: pointer;
+  color: #9dabb8;
+  font-weight: bold;
+  font-size: 1vw;
+}
+.help-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #9dabb8;
+  border-radius: 5%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  max-width: 50vw;
+  z-index: 1001;
+}
+.help-content p {
+  text-align: left;
+}
+
 /* 音符图标（占位） */
 .music-icon {
   position: relative;
