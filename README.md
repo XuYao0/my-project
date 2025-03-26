@@ -1,12 +1,12 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+<h3>使用帮助</h3>
+<p>1.再点击一次“帮助”即可关闭此窗口</p>
+<p>2.点击选择文件以上传音频文件，文件存储在本地缓存，与浏览器绑定。</p>
+<p>3.点击REW可以快退五秒，点击FF可以快进五秒，点击这俩中间那个可以切换播放和暂停</p>
+<p>4.点击1x可以选择播放速度</p>
+<p>5.点击正常模式可以选择正常模式或者断点循环模式，点击断点循环模式后在右侧断点列表中点击两个断点，即可在该两个断点之间循环</p>
+<p>6.点击添加断点可以添加断点</p>
+<p>7.快退、快进、播放暂停、添加断点的键盘快捷键分别是方向键左、方向键右、空格键、键B</p>
+<p>8.右上方可以点击切换播放列表和断点列表，每一首曲子都有自己的断点列表</p>
+<p>9.点击播放列表中的曲名可以跳转到该曲播放，点击曲名旁边的叉可以删去该曲（包括断点和本地存储文件），双击曲名可以重命名</p>
+<p>10.点击断点列表中的断点可以跳转到该断点处，点击断点名旁边的叉可以删去该断点，双击断点名可以重命名</p>
+<p>11.文件名、断点名等也存储在本地缓存，与浏览器绑定</p>
